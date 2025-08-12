@@ -1,0 +1,113 @@
+<?php
+
+use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\ConfirmationController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GuestController;
+use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PemesananController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ToppingController;
+use App\Http\Controllers\UserController;
+use App\Models\Product;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "web" middleware group. Make something great!
+|
+*/
+
+Route::get('/', function () {
+    return view('welcome');
+});
+
+Route::get('/home', [DashboardController::class, 'index'])->name('dashboard.index');
+
+Route::get('/detail-products/{id}', [ProductController::class, 'index'])->name('products.index');
+
+Route::get('/checkout', [ProductController::class, 'checkout'])->name('products.checkout');
+Route::post('/checkout', [ProductController::class, 'store'])->name('checkout.store');
+Route::post('/order/remove-item', [ProductController::class, 'removeItem'])->name('order.removeItem');
+
+
+Route::get('/confirm', [ProductController::class, 'confirm'])->name('products.confirm');
+
+Route::get('/wait', [ProductController::class, 'wait'])->name('products.wait');
+
+Route::post('/order/save', function (Request $request) {
+    session()->put('order', [
+        'name' => $request->input('name'),
+        'no_meja' => $request->input('no_meja'),
+    ]);
+
+    return redirect()->route('dashboard.index');
+})->name('order.save');
+
+Route::middleware([
+    'auth:sanctum',
+    'role:1,2',
+])->group(function () {
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('/admin/user', [UserController::class, 'index'])->name('user.index');
+    Route::get('/admin/user/create', [UserController::class, 'create'])->name('user.create');
+    Route::get('/admin/user/edit/{id}', [UserController::class, 'edit'])->name('user.edit');
+    Route::put('/admin/user/{id}', [UserController::class, 'update'])->name('user.update');
+    Route::post('/admin/user/create', [UserController::class, 'store'])->name('user.store');
+
+    // Inventory
+    Route::get('/admin/inventory', [InventoryController::class, 'index'])->name('inventory.index');
+    Route::get('/admin/inventory/create', [InventoryController::class, 'create'])->name('inventory.create');
+    Route::get('/admin/inventory/edit/{id}', [InventoryController::class, 'edit'])->name('inventory.edit');
+    Route::post('/admin/inventory/create', [InventoryController::class, 'store'])->name('inventory.store');
+    Route::put('/admin/inventory/{id}', [InventoryController::class, 'update'])->name('inventory.update');
+    Route::delete('/admin/inventory/{id}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
+
+    // Toppings
+    Route::get('/admin/topping', [ToppingController::class, 'index'])->name('topping.index');
+    Route::get('/admin/topping/create', [ToppingController::class, 'create'])->name('topping.create');
+    Route::get('/admin/topping/edit/{id}', [ToppingController::class, 'edit'])->name('topping.edit');
+    Route::put('/admin/topping/{id}', [ToppingController::class, 'update'])->name('topping.update');
+    Route::post('/admin/topping/create', [ToppingController::class, 'store'])->name('topping.store');
+    Route::delete('/admin/topping/{id}', [ToppingController::class, 'destroy'])->name('topping.destroy');
+
+    // Pemesanan Controller
+    Route::get('/admin/pemesanan', [PemesananController::class, 'index'])->name('pemesanan.index');
+    Route::put('/admin/pemesanan/{id}', [PemesananController::class, 'updateStatus'])->name('pemesanan.updateStatus');
+    Route::put('/admin/pemesanan-payment/{id}', [PemesananController::class, 'updatePaymentMethod'])->name('pemesanan.updatePayment');
+    Route::put('/admin/pemesanan/table-number/{id}', [PemesananController::class, 'updateTableNumber'])->name('pemesanan.updateTableNumber');
+    Route::get('/admin/pemesanan/detail/{id}', [PemesananController::class, 'detail'])->name('pemesanan.detail');
+});
+
+// routes/web.php
+Route::post('/order/add', [OrderController::class, 'addToOrder'])->name('order.add');
+Route::post('/order/update-qty', [OrderController::class, 'updateQty'])->name('order.updateQty');
+
+Route::get('/clear-order', [OrderController::class, 'clearOrder'])->name('order.clearOrder');
+
+Route::post('/order/store', [ProductController::class, 'storeOrder'])->name('order.storeOrder');
+
+Route::post('/guest/add', [GuestController::class, 'addToGuest'])->name('guest.add');
+
+Route::get('/logout', function () {
+    Auth::logout(); // Fungsi untuk logout user
+    request()->session()->invalidate(); // Invalidasi sesi
+    request()->session()->regenerateToken(); // Regenerasi token CSRF
+    return redirect('/login');
+});
+
+Route::post('/logout', function () {
+    Auth::logout(); // Fungsi untuk logout user
+    request()->session()->invalidate(); // Invalidasi sesi
+    request()->session()->regenerateToken(); // Regenerasi token CSRF
+    return redirect('/login');
+})->name('logout');
